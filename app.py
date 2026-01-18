@@ -27,13 +27,13 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 2. INICIALIZACIÓN
-db = DBManager()
-
+# Busca esta parte y déjala así:
 try:
+    db = DBManager()
     df_cat, df_config = db.obtener_todo()
     saldo_flotante = df_config.loc[df_config['clave'] == 'partida_flotante', 'valor'].values[0]
 except Exception as e:
-    st.error("Error al conectar con Google Sheets. Revisa tus Secrets e ID.")
+    st.error(f"Error real detectado: {e}") # Esto nos dirá qué pasa exactamente
     st.stop()
 
 # 3. CABECERA: SALDO GLOBAL
