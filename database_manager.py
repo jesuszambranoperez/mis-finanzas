@@ -7,16 +7,23 @@ class DBManager:
         # Volvemos a la conexión oficial para poder escribir
         self.conn = st.connection("gsheets", type=GSheetsConnection)
 
-    def obtener_todo(self):
-        # Intentamos leer las dos pestañas
+   def obtener_todo(self):
         try:
-            cats = self.conn.read(worksheet="Categorias")
-            config = self.conn.read(worksheet="Config")
-            # Limpiar datos nulos por si acaso
+            # Forzamos la lectura de las pestañas
+            cats = self.conn.read(worksheet="Categorias", ttl=0)
+            config = self.conn.read(worksheet="Config", ttl=0)
+            
+            # Limpieza de seguridad: quitar filas/columnas vacías que mete Google
             cats = cats.dropna(subset=['nombre'])
+            config = config.dropna(subset=['clave'])
+            
+            # Asegurar que los nombres de columnas son minúsculas y sin espacios
+            cats.columns = [c.strip().lower() for c in cats.columns]
+            config.columns = [c.strip().lower() for c in config.columns]
+            
             return cats[cats['activa'] == 1], config
         except Exception as e:
-            st.error(f"Error al leer tablas: {e}")
+            st.error(f"Error técnico detallado: {e}")
             return pd.DataFrame(), pd.DataFrame()
 
     def eliminar_y_flotar(self, nombre_cat):
