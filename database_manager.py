@@ -2,9 +2,10 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
+# En database_manager.py
 class DBManager:
     def __init__(self):
-        # Conexión con el nuevo Sheets de base de datos
+        # Esta línea permite leer el archivo usando solo el enlace público
         self.conn = st.connection("gsheets", type=GSheetsConnection)
 
     def obtener_todo(self):
