@@ -1,0 +1,29 @@
+/* Estilo general de la App */
+.main {
+    background-color: #f8f9fa;
+}
+
+/* Tarjeta de Saldo Global */
+.total-card {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Fichas de Partidas (Alquiler, Mercado, etc.) */
+.category-card {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    border-left: 5px solid #3b82f6;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+}
+
+.category-card:active {
+    transform: scale(0.95);
+}
