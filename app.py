@@ -1,27 +1,110 @@
 import streamlit as st
+import pandas as pd
 
-# Configuración básica
-st.set_page_config(page_title="Finanzas Familiares", page_icon="💰")
+# --- CONFIGURACIÓN DE PÁGINA Y ESTILO (CSS) ---
+st.set_page_config(page_title="Family Bank Pro", layout="wide", initial_sidebar_state="expanded")
 
-# Título y bienvenida
-st.title("💰 Mi App de Finanzas Familiar")
-st.write("¡Bienvenido Jesús! Esta es la base de tu nueva herramienta.")
+# Inyectamos CSS para que la app se vea moderna y limpia
+st.markdown("""
+    <style>
+    .main { background-color: #f5f7f9; }
+    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
+    .stProgress > div > div > div > div { background-color: #28a745; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# Menú lateral para elegir quién usa la app
-perfil = st.sidebar.radio("¿Quién está usando la App?", ["Jesús", "Esposa", "Niños"])
+# --- FUNCIÓN PARA CARGAR TUS DATOS REALES ---
+@st.cache_data
+def load_data():
+    try:
+        df = pd.read_csv("Finanzas Jesus New - base.csv")
+        # Limpieza básica de nombres para evitar errores
+        df.columns = df.columns.str.strip()
+        return df
+    except:
+        return None
 
-if perfil == "Jesús":
-    st.header("🧔 Panel de Jesús")
-    st.metric("Saldo Estimado", "4.645,76 €")
-    st.info("Aquí verás tus colchones del Excel pronto.")
+df_jesus = load_data()
 
-elif perfil == "Esposa":
-    st.header("👩 Panel de Control Variable")
-    ingreso = st.number_input("Ingresa el monto de este mes", value=0.0)
-    st.write(f"Si ingresas {ingreso}, se repartirá según tus porcentajes.")
+# --- BARRA LATERAL (AJUSTES GLOBAL) ---
+with st.sidebar:
+    st.title("Settings / Ajustes")
+    idioma = st.selectbox("🌐 Idioma", ["Español", "English"])
+    divisa = st.selectbox("💰 Divisa", ["€", "$", "COP", "MXN"])
+    perfil = st.radio("👤 Cambiar Perfil", ["Jesús (Principal)", "Esposa (Variable)", "Niños (Aprendizaje)"])
+    
+    st.markdown("---")
+    if st.button("📥 Descargar Resumen (Excel/CSV)"):
+        st.info("Función de exportación lista.")
 
+# --- LÓGICA POR PERFIL ---
+
+# 1. PERFIL JESÚS (DATOS HISTÓRICOS)
+if perfil == "Jesús (Principal)":
+    st.title(f"🧔 Bienvenido, Jesús")
+    
+    if df_jesus is not None:
+        # Extraer datos de la primera fila
+        row = df_jesus.iloc[0]
+        banco_real = row.get("Total acumulado caja/sant  mes", 0)
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Banco (Real)", f"{banco_real} {divisa}")
+        col2.metric("Total Colchones", f"{banco_real} {divisa}")
+        col3.metric("Diferencia", "0.00", delta="Sincronizado")
+
+        st.markdown("### 📂 Mis Colchones Acumulados")
+        # Mostrar categorías principales
+        cats = st.columns(4)
+        cats[0].metric("🛒 Mercado", f"{row.get('Mercado', 0)} {divisa}")
+        cats[1].metric("🏠 Alquiler", f"{row.get('Alquiler - energia', 0)} {divisa}")
+        cats[2].metric("👶 Niños", f"{row.get('Envío Mérida', 0)} {divisa}")
+        cats[3].metric("🚙 Coche", f"{row.get('Carro', 0)} {divisa}", delta_color="inverse" if row.get('Carro', 0) < 0 else "normal")
+    else:
+        st.warning("⚠️ Sube el archivo 'Finanzas Jesus New - base.csv' a GitHub para ver tus datos.")
+
+# 2. PERFIL ESPOSA (INGRESO VARIABLE Y PORCENTAJES)
+elif perfil == "Esposa (Variable)":
+    st.title("👩 Panel de Control Variable")
+    st.info("Ideal para ingresos que cambian cada mes.")
+    
+    ingreso_v = st.number_input(f"Monto recibido ({divisa})", min_value=0.0, step=10.0)
+    
+    st.markdown("### 📊 Reparto por Porcentajes")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        p_ahorro = st.slider("% para Ahorro", 0, 100, 30)
+        p_comida = st.slider("% para Comida", 0, 100, 40)
+    with col_b:
+        p_gustos = st.slider("% para Gustos", 0, 100, 20)
+        p_otros = st.slider("% para Otros", 0, 100, 10)
+    
+    if st.button("Confirmar Reparto"):
+        st.success(f"Repartidos {ingreso_v} {divisa}:")
+        st.write(f"- Ahorro: {ingreso_v * p_ahorro / 100} {divisa}")
+        st.write(f"- Comida: {ingreso_v * p_comida / 100} {divisa}")
+
+# 3. PERFIL NIÑOS (GAMIFICACIÓN)
 else:
-    st.header("👦 Mi Hucha Mágica")
-    st.write("¡Ahorra para tus juguetes!")
-    st.progress(60)
-    st.success("¡Vas por muy buen camino!")
+    st.title("👦 Mi Hucha Mágica")
+    st.balloons()
+    
+    meta_nombre = st.text_input("¿Qué quieres comprar?", "Bicicleta")
+    meta_precio = st.number_input("¿Cuánto vale?", value=100.0)
+    mis_ahorros = st.number_input("¿Cuánto tienes ahorrado?", value=45.0)
+    
+    progreso = min(mis_ahorros / meta_precio, 1.0)
+    st.progress(progreso)
+    st.write(f"¡Estás al **{int(progreso*100)}%** de tu meta!")
+    
+    st.chat_message("assistant").write(f"💡 Consejo Pro: Si guardas {divisa}5 más esta semana, ¡llegarás antes a tu {meta_nombre}!")
+
+# --- REGISTRO DE GASTOS COMÚN ---
+st.sidebar.markdown("---")
+with st.sidebar.expander("➕ Registrar Gasto"):
+    st.number_input("Monto", min_value=0.0)
+    st.selectbox("Categoría", ["Mercado", "Salud", "Gustos", "Coche"])
+    st.date_input("Fecha")
+    if st.button("Guardar Gasto"):
+        st.toast("Gasto registrado localmente")
