@@ -3,7 +3,7 @@ import google.generativeai as genai
 
 # Esto busca la clave que pegaste en Secrets
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-pro') pd
+model = genai.GenerativeModel('gemini-pro')
 
 # --- CONFIGURACIÓN ESTÉTICA (CSS) ---
 st.set_page_config(page_title="Finanzas Familiares", layout="wide")
