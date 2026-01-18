@@ -1,6 +1,9 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
-import pandas as pd
+import google.generativeai as genai
+
+# Esto busca la clave que pegaste en Secrets
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel('gemini-pro') pd
 
 # --- CONFIGURACIÓN ESTÉTICA (CSS) ---
 st.set_page_config(page_title="Finanzas Familiares", layout="wide")
