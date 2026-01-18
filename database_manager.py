@@ -1,8 +1,8 @@
 import requests # Asegúrate de tener 'requests' en tu requirements.txt
 
 def guardar_nueva_categoria(self, nombre, icono):
-    # La URL que copiaste en el paso anterior
-    script_url = "TU_URL_DE_APPS_SCRIPT_AQUI"
+   # Dentro de la función guardar_nueva_categoria
+script_url = "https://script.google.com/macros/s/AKfycbzoRD9xRb0aNWW4DgxKh9J9vzQ0a_lrsN3-it7G0LrWE4v2wstPU5X5rU9GUAjt7_4F/exec"
     
     # Obtenemos el último ID para el nuevo registro
     df_cats, _ = self.obtener_todo()
