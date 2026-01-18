@@ -1,24 +1,45 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
 class DBManager:
     def __init__(self):
-        # Usamos el ID directamente para construir la URL de descarga CSV
-        self.sheet_id = "1UUYFw_2XcmJh4Si9dc-fimeUbTH5eD-LgBdiLOw-id4"
-        
-    def obtener_todo(self):
-        # Leemos las pestañas usando la URL pública de exportación
-        url_cats = f"https://docs.google.com/spreadsheets/d/{self.sheet_id}/gviz/tq?tqx=out:csv&sheet=Categorias"
-        url_config = f"https://docs.google.com/spreadsheets/d/{self.sheet_id}/gviz/tq?tqx=out:csv&sheet=Config"
-        
-        cats = pd.read_csv(url_cats)
-        config = pd.read_csv(url_config)
-        
-        # Limpiamos columnas vacías que a veces mete Google
-        cats = cats.dropna(axis=1, how='all')
-        config = config.dropna(axis=1, how='all')
-        
-        return cats[cats['activa'] == 1], config
+        # Volvemos a la conexión oficial para poder escribir
+        self.conn = st.connection("gsheets", type=GSheetsConnection)
 
-    def guardar_nueva_categoria(self, nombre, icono):
-        st.warning("⚠️ El modo lectura pública no permite guardar cambios directamente todavía. Necesitamos configurar la escritura.")
+    def obtener_todo(self):
+        # Intentamos leer las dos pestañas
+        try:
+            cats = self.conn.read(worksheet="Categorias")
+            config = self.conn.read(worksheet="Config")
+            # Limpiar datos nulos por si acaso
+            cats = cats.dropna(subset=['nombre'])
+            return cats[cats['activa'] == 1], config
+        except Exception as e:
+            st.error(f"Error al leer tablas: {e}")
+            return pd.DataFrame(), pd.DataFrame()
+
+    def eliminar_y_flotar(self, nombre_cat):
+        # 1. Leer datos actuales
+        df_cats = self.conn.read(worksheet="Categorias")
+        df_config = self.conn.read(worksheet="Config")
+        
+        # 2. Identificar la fila y el saldo
+        idx = df_cats[df_cats['nombre'] == nombre_cat].index[0]
+        saldo_a_mover = df_cats.at[idx, 'saldo_acumulado']
+        
+        # 3. Modificar localmente (Desactivar)
+        df_cats.at[idx, 'activa'] = 0
+        df_cats.at[idx, 'saldo_acumulado'] = 0
+        
+        # 4. Sumar al saldo flotante en la tabla Config
+        idx_flotante = df_config[df_config['clave'] == 'partida_flotante'].index[0]
+        saldo_actual_f = df_config.at[idx_flotante, 'valor']
+        df_config.at[idx_flotante, 'valor'] = saldo_actual_f + saldo_a_mover
+        
+        # 5. SUBIR CAMBIOS AL EXCEL (Escritura)
+        self.conn.update(worksheet="Categorias", data=df_cats)
+        self.conn.update(worksheet="Config", data=df_config)
+        
+        # Limpiar caché para que la app se actualice
+        st.cache_data.clear()
