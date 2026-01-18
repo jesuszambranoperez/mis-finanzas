@@ -14,7 +14,8 @@ def guardar_nueva_categoria(self, nombre, icono):
         "id": nuevo_id,
         "nombre": nombre,
         "icono": icono
-    }    
+    }
+    
     try:
         response = requests.post(script_url, json=payload)
         if response.status_code == 200:
