@@ -14,18 +14,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PARA CARGAR TUS DATOS REALES ---
-@st.cache_data
+# --- CONEXIÓN DIRECTA CON GOOGLE SHEETS ---
 def load_data():
+    # SUSTITUYE este enlace por el que copiaste en el paso anterior
+    google_sheet_url = "AQUÍ_PEGAS_TU_ENLACE_DE_GOOGLE_DRIVE"
+    
     try:
-        df = pd.read_csv("Finanzas Jesus New - base.csv")
-        # Limpieza básica de nombres para evitar errores
+        df = pd.read_csv(google_sheet_url)
         df.columns = df.columns.str.strip()
         return df
     except:
+        st.error("No se pudo conectar con Google Sheets. Revisa el enlace.")
         return None
-
-df_jesus = load_data()
 
 # --- BARRA LATERAL (AJUSTES GLOBAL) ---
 with st.sidebar:
