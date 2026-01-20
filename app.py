@@ -2,95 +2,67 @@ import streamlit as st
 import pandas as pd
 from database_manager import DBManager
 
-# 1. CONFIGURACIÓN E INTERFAZ
-st.set_page_config(page_title="Family Bank Pro", layout="wide", initial_sidebar_state="collapsed")
+# Configuración de la página para que parezca App de móvil
+st.set_page_config(page_title="Mis Finanzas", page_icon="💰", layout="centered")
 
-# Estilo personalizado (puedes moverlo a styles.css si prefieres)
+# CSS Personalizado para el look & feel
 st.markdown("""
     <style>
-    .stButton > button {
-        border-radius: 15px;
-        height: 120px;
-        background-color: white;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border-left: 5px solid #3b82f6;
-    }
-    .floating-banner {
-        background-color: #fef3c7;
-        padding: 20px;
-        border-radius: 15px;
-        border: 1px solid #f59e0b;
-        margin-bottom: 20px;
-        text-align: center;
-    }
+    .main { background-color: #f8f9fa; }
+    .stButton>button { width: 100%; border-radius: 12px; height: 3em; background-color: white; border: 1px solid #eee; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+    .bank-card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; border-bottom: 4px solid #4CAF50; }
+    .cat-card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 10px; }
+    .total-balance { font-size: 2.5em; font-weight: bold; color: #1E1E1E; text-align: center; margin: 20px 0; }
+    .floating-banner { background: #FFF9C4; padding: 10px; border-radius: 10px; text-align: center; color: #FBC02D; font-weight: bold; margin-bottom: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. INICIALIZACIÓN
-# Busca esta parte y déjala así:
-try:
-    db = DBManager()
-    df_cat, df_config = db.obtener_todo()
-    saldo_flotante = df_config.loc[df_config['clave'] == 'partida_flotante', 'valor'].values[0]
-except Exception as e:
-    st.error(f"Error real detectado: {e}") # Esto nos dirá qué pasa exactamente
-    st.stop()
+db = DBManager()
+df_cat, df_config = db.obtener_todo()
 
-# 3. CABECERA: SALDO GLOBAL
-st.title("🛡️ Mi Control Financiero")
-total_disponible = df_cat['saldo_acumulado'].sum() + saldo_flotante
-st.metric("Saldo Global Disponible", f"{total_disponible:,.2f} €")
+# --- CABECERA: SALDO TOTAL ---
+saldo_total = df_cat['saldo_acumulado'].sum() # Simplificado
+st.markdown(f'<div class="total-balance">{saldo_total:,.2f}€</div>', unsafe_allow_html=True)
 
-# 4. ALERTA: PARTIDA FLOTANTE
-if saldo_flotante > 0:
-    st.markdown(f'''
-        <div class="floating-banner">
-            <h4 style="margin:0;color:#92400e;">📦 Dinero en Tránsito: {saldo_flotante:,.2f} €</h4>
-            <p style="margin:0;color:#b45309;">Este dinero proviene de categorías eliminadas o ajustes.</p>
-        </div>
-    ''', unsafe_allow_html=True)
-    
-    with st.expander("🔄 Repartir Dinero en Tránsito"):
-        col_t1, col_t2 = st.columns(2)
-        destino = col_t1.selectbox("Enviar a:", df_cat['nombre'].tolist())
-        monto_t = col_t2.number_input("Cantidad a mover", min_value=0.0, max_value=float(saldo_flotante))
-        if st.button("Confirmar Transferencia"):
-            # Aquí llamaríamos a una función de transferencia en db_manager
-            st.success("Transferencia realizada (pendiente vincular lógica)")
+# --- BANCOS (Scroll Horizontal simulado con columnas) ---
+col_b1, col_b2, col_b3 = st.columns(3)
+with col_b1:
+    st.markdown('<div class="bank-card"><small>Cajamar</small><br><b>1,250€</b></div>', unsafe_allow_html=True)
+with col_b2:
+    st.markdown('<div class="bank-card" style="border-color: #E53935"><small>Santander</small><br><b>840€</b></div>', unsafe_allow_html=True)
+with col_b3:
+    st.markdown('<div class="bank-card" style="border-color: #FB8C00"><small>Efectivo</small><br><b>120€</b></div>', unsafe_allow_html=True)
 
-# 5. CUADRÍCULA DE PARTIDAS
-st.write("### Mis Partidas")
-cols = st.columns(2) # Ideal para vista móvil
+st.write("---")
 
-for i, (index, row) in enumerate(df_cat.iterrows()):
+# --- PARTIDA FLOTANTE ---
+saldo_f = df_config.loc[df_config['clave'] == 'partida_flotante', 'valor'].values[0]
+if saldo_f > 0:
+    st.markdown(f'<div class="floating-banner">⚠️ Tienes {saldo_f}€ en la partida flotante</div>', unsafe_allow_html=True)
+
+# --- CATEGORÍAS (Grid de 2 columnas) ---
+st.subheader("Mis Partidas")
+cols = st.columns(2)
+
+for i, row in df_cat.iterrows():
     with cols[i % 2]:
-        # Botón con Icono, Nombre y Saldo
-        label = f"{row['icono']} {row['nombre']}\n\n{row['saldo_acumulado']:.2f} €"
-        if st.button(label, key=f"btn_{row['nombre']}"):
-            st.session_state.cat_focus = row['nombre']
-
-# 6. PANEL DE ACCIÓN (Aparece al tocar una partida)
-if 'cat_focus' in st.session_state:
-    st.markdown("---")
-    st.subheader(f"Gestión: {st.session_state.cat_focus}")
-    
-    c1, c2, c3 = st.columns([2, 1, 1])
-    monto = c1.number_input("Monto", min_value=0.0)
-    
-    if c2.button("➕ Ingreso"):
-        st.success(f"Sumado a {st.session_state.cat_focus}")
-        # Aquí llamarías a db.actualizar_saldo(cat, monto)
+        # Simulamos un objetivo de presupuesto para la barra de progreso
+        objetivo = 500 # Esto luego lo traeremos del Excel
+        progreso = min(float(row['saldo_acumulado'] / objetivo), 1.0)
         
-    if c3.button("🗑️ Borrar Categoría"):
-        db.eliminar_y_flotar(st.session_state.cat_focus)
-        st.warning(f"Categoría eliminada. Dinero movido a tránsito.")
-        st.rerun()
+        st.markdown(f"""
+            <div class="cat-card">
+                <span style="font-size: 25px;">{row['icono']}</span><br>
+                <b>{row['nombre']}</b><br>
+                <small style="color: gray;">{row['saldo_acumulado']}€ de {objetivo}€</small>
+            </div>
+        """, unsafe_allow_html=True)
+        st.progress(progreso)
+        if st.button(f"Gestionar {row['nombre']}", key=row['nombre']):
+            st.session_state.cat_focus = row['nombre']
+            st.rerun()
 
-# 7. BARRA LATERAL: ADMIN
-with st.sidebar:
-    st.header("⚙️ Configuración")
-    new_name = st.text_input("Nombre nueva categoría")
-    new_icon = st.text_input("Icono (Emoji)", value="💰")
-    if st.button("➕ Crear Categoría"):
-        db.guardar_nueva_categoria(new_name, new_icon)
-        st.rerun()
+# --- BOTÓN FLOTANTE (AÑADIR) ---
+st.write("")
+if st.button("➕ Crear Nueva Partida"):
+    st.info("Aquí abriremos el formulario para crear")
