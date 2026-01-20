@@ -30,7 +30,7 @@ categorias = [
     {"n": "Alquiler", "i": "🏠", "m": 250},
     {"n": "Mercado", "i": "🛒", "m": 120},
     {"n": "Salud", "i": "💊", "m": 45}
-    {"n": "Sexo", "i": "🥒", "m": 45}
+    {"n": "Sexo", "i": "🥒", "m": 45000000}
 ]
 
 for cat in categorias:
